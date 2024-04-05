@@ -1,0 +1,99 @@
+version: '3.7'
+
+services:
+  qbittorrent:
+    image: linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - /mnt/appdata/qbittorrent:/config/qbittorrent
+      - /mnt/medias:/medias
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - WEBUI_LISTEN=0.0.0.0:8080
+    network_mode: "service:gluetun"  # Align network_mode with other options
+
+  tailscale:
+    image: tailscale/tailscale:latest
+    container_name: Tailscale
+    restart: unless-stopped
+    volumes:
+      - /var/lib/tailscale:/var/lib/tailscale
+    environment:
+      - TS_AUTHKEY=44f86afeafbd73994c54fcd95e2248d9d9d11f0d8386eec6
+      - TS_EXTRA_ARGS=--login-server=https://headscale.aesthia.fr
+      - TS_HOSTNAME=Tailscale-Docker-LXC
+    network_mode: "host"  # Use host network mode
+
+  gluetun:
+    image: qmcgaw/gluetun:latest
+    container_name: gluetun
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - ./gluetun:/gluetun
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      - VPN_SERVICE_PROVIDER=custom
+      - VPN_TYPE=wireguard
+      - VPN_ENDPOINT_IP=185.246.211.72
+      - VPN_ENDPOINT_PORT=51820
+      - WIREGUARD_PUBLIC_KEY=QkRTXcTgRJGTjSFe/Qaa8l6hi7NbITvGFRSdhUpMvSw=
+      - WIREGUARD_PRIVATE_KEY=EB2q5hdgMNX/nXbhBFep/Y9VeZ9UYfagRu/ut40uk3w=
+      - WIREGUARD_ADDRESSES=10.2.0.2/32
+      - VPN_PORT_FORWARDING=on
+      - VPN_PORT_FORWARDING_PROVIDER=protonvpn
+    ports:
+      - "8080:8080/tcp"
+      - "8080:8080/udp"
+      - "9595:9595/tcp"
+      - "9595:9595/udp"
+      - "9696:9696/tcp"
+      - "9696:9696/udp"
+      - "9797:9797/tcp"
+      - "9797:9797/udp"
+      - "9898:9898/tcp"
+      - "9898:9898/udp"
+      
+  prowlarr:
+    image: linuxserver/prowlarr:latest
+    container_name: prowlarr
+    restart: unless-stopped
+    volumes:
+      - /mnt/appdata/prowlarr:/config/prowlarr
+      - /mnt/medias:/medias
+    network_mode: "service:gluetun"  # Align network_mode with other options
+
+  lidarr:
+    image: linuxserver/lidarr:latest
+    container_name: lidarr
+    restart: unless-stopped
+    volumes:
+      - /mnt/appdata/lidarr:/config/lidarr
+      - /mnt/medias:/medias
+    network_mode: "service:gluetun"  # Align network_mode with other options
+
+  sonarr:
+    image: linuxserver/sonarr:latest
+    container_name: sonarr
+    restart: unless-stopped
+    volumes:
+      - /mnt/appdata/sonarr:/config/sonarr
+      - /mnt/medias:/medias
+    network_mode: "service:gluetun"  # Align network_mode with other options
+
+  radarr:
+    image: linuxserver/radarr:latest
+    container_name: radarr
+    restart: unless-stopped
+    volumes:
+      - /mnt/appdata/radarr:/config/radarr
+      - /mnt/medias:/medias
+    network_mode: "service:gluetun"  # Align network_mode with other options
